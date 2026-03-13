@@ -91,3 +91,6 @@ services:
     name: kitchen-redis
     plan: free
     maxmemoryPolicy: allkeys-lru
+    ipAllowList:
+    - source: 0.0.0.0/0
+      description: allow all
