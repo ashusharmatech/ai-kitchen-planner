@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'frontend/**'
+      - '.github/workflows/deploy-frontend.yml'
 
 permissions:
   contents: read
@@ -26,11 +27,12 @@ jobs:
 
       - name: Patch API URL into frontend
         run: |
-          # Replace localhost:8000 with your live Render gateway URL
           sed -i "s|http://localhost:8000|https://kitchen-api-gateway.onrender.com|g" \
             frontend/index.html frontend/admin.html
 
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true   # auto-enables Pages if not already on
 
       - uses: actions/upload-pages-artifact@v3
         with:
