@@ -1,100 +1,107 @@
-# AI Kitchen Planner — Microservices on GKE
+# AI Kitchen Planner 🍳
 
-Production-ready microservices architecture for generating daily vegetarian meal plans in Hindi, deployed on Google Kubernetes Engine.
+Microservices system that generates daily **vegetarian meal plans in Hindi** using OpenAI GPT-4o-mini.
+Deployed on **Render.com** (free tier). Frontend on **GitHub Pages**.
+
+## Live URLs
+| What | URL |
+|---|---|
+| Cook UI (Hindi) | https://ashusharmatech.github.io/ai-kitchen-planner/ |
+| API Gateway | https://kitchen-api-gateway.onrender.com |
 
 ## Services
 
 | Service | Port | Responsibility |
-|---------|------|----------------|
-| `api-gateway` | 8000 | Entry point — routing, CORS |
+|---|---|---|
+| `api-gateway` | 8000 | Single entry point — routing, CORS |
 | `household-service` | 8001 | Profiles, ingredients, preferences, context |
-| `planner-service` | 8002 | Claude AI orchestration, plan generation, Redis cache |
-| `translation-service` | 8003 | Hindi NLG via Claude |
-| `feedback-service` | 8004 | Ratings, history queries |
-| `scheduler-service` | — | GKE CronJob — 6 AM IST pre-generation |
+| `planner-service` | 8002 | OpenAI GPT-4o-mini — plan generation + Redis cache |
+| `translation-service` | 8003 | Hindi NLG via OpenAI |
+| `feedback-service` | 8004 | Ratings and history |
+| `scheduler-service` | — | Render Cron — 6 AM IST daily pre-generation |
 
-## Prerequisites
+## Stack
 
-- Google Cloud SDK (`gcloud`)
-- `kubectl`
-- `kustomize`
-- Docker
-- A GCP project with billing enabled
+| Layer | Tech |
+|---|---|
+| Backend | Python 3.11 + FastAPI |
+| AI | OpenAI GPT-4o-mini |
+| Database | Supabase (Postgres + RLS) — Mumbai region |
+| Cache | Redis (Render free tier) |
+| Cook UI | Vanilla HTML — Hindi, mobile-first |
+| Admin UI | Vanilla HTML — English, desktop |
+| Hosting | Render.com (backend) + GitHub Pages (frontend) |
+| CI/CD | GitHub Actions |
 
-## Quick Start — Local Dev
-
-```bash
-cp .env.example .env          # fill in ANTHROPIC_API_KEY and SUPABASE_KEY
-./scripts/dev.sh              # starts all services via docker-compose
-# API available at http://localhost:8000
-```
-
-## GKE Deployment
-
-### 1. Provision cluster (one-time)
-```bash
-export GCP_PROJECT=your-project-id
-export ANTHROPIC_API_KEY=sk-ant-...
-export SUPABASE_KEY=eyJ...
-./scripts/setup-gke.sh
-```
-
-### 2. Update configuration
-- Set your domain in `k8s/base/ingress.yaml` and `k8s/base/managed-cert.yaml`
-- Set your GCP Project ID in `k8s/overlays/prod/kustomization.yaml`
-
-### 3. Build and push images manually (or use Cloud Build)
-```bash
-export PROJECT=your-project-id
-for svc in api-gateway household-service planner-service translation-service feedback-service scheduler-service; do
-  docker build -t gcr.io/$PROJECT/$svc:prod ./services/$svc
-  docker push gcr.io/$PROJECT/$svc:prod
-done
-```
-
-### 4. Deploy
-```bash
-kubectl apply -k k8s/overlays/prod
-kubectl rollout status deployment -n kitchen-planner
-```
-
-### 5. CI/CD via Cloud Build (recommended)
-Connect your repo to Cloud Build — every push to `main` automatically builds, pushes, and deploys.
+## Local Development
 
 ```bash
-# Connect in Cloud Build console, then trigger is created automatically
-# Manually trigger:
-gcloud builds submit --config cloudbuild.yaml
+cp .env.example .env          # add OPENAI_API_KEY, SUPABASE_URL, SUPABASE_KEY
+./scripts/dev.sh              # docker-compose up --build
+# API at http://localhost:8000
+# Cook UI: open frontend/index.html
 ```
+
+## Render Deployment
+
+1. Go to [render.com](https://render.com) → New → **Blueprint**
+2. Connect this GitHub repo — Render reads `render.yaml` automatically
+3. In Render dashboard set environment variables for each service:
+   - `OPENAI_API_KEY`
+   - `SUPABASE_URL`
+   - `SUPABASE_KEY`
+4. Deploy — all 7 services (5 web + 1 Redis + 1 cron) are created
+
+Every `git push` to `main` triggers an auto-redeploy on Render.
+
+## GitHub Secrets Required
+
+Add these in: repo → Settings → Secrets and variables → Actions
+
+| Secret | Value |
+|---|---|
+| `OPENAI_API_KEY` | From platform.openai.com |
+| `SUPABASE_URL` | `https://cfcviixmuchtzynetphq.supabase.co` |
+| `SUPABASE_KEY` | From Supabase dashboard → Project Settings → API |
+
+## GitHub Pages Setup (one-time)
+
+Repo → Settings → Pages → Source: **GitHub Actions**
+
+The `deploy-frontend.yml` workflow publishes `frontend/` automatically on every push.
 
 ## Project Structure
 
 ```
-kitchen-planner-k8s/
+ai-kitchen-planner/
+├── .github/
+│   ├── workflows/
+│   │   ├── deploy-frontend.yml   # Auto-deploy to GitHub Pages on push
+│   │   └── test-services.yml     # Lint + Docker build on PRs
+│   └── SECRETS.md                # Which secrets to add and where
+├── frontend/
+│   ├── index.html                # Cook-facing Hindi UI (mobile)
+│   └── admin.html                # Admin panel (desktop)
 ├── services/
-│   ├── api-gateway/            # Reverse proxy (port 8000)
-│   ├── household-service/      # Profiles & pantry (port 8001)
-│   ├── planner-service/        # Claude AI + Redis (port 8002)
-│   ├── translation-service/    # Hindi NLG (port 8003)
-│   ├── feedback-service/       # Ratings & history (port 8004)
-│   └── scheduler-service/      # CronJob runner
-├── k8s/
-│   ├── base/                   # All K8s manifests
-│   └── overlays/
-│       ├── dev/                # 1 replica, dev tags
-│       └── prod/               # 3 replicas, prod tags, HPA
-├── scripts/
-│   ├── setup-gke.sh            # One-time cluster setup
-│   └── dev.sh                  # Local docker-compose runner
-├── cloudbuild.yaml             # Cloud Build CI/CD pipeline
-└── docker-compose.yml          # Local development
+│   ├── api-gateway/              # Port 8000 — reverse proxy
+│   ├── household-service/        # Port 8001 — pantry & profiles
+│   ├── planner-service/          # Port 8002 — OpenAI + Redis
+│   ├── translation-service/      # Port 8003 — Hindi NLG
+│   ├── feedback-service/         # Port 8004 — ratings & history
+│   └── scheduler-service/        # Cron — 6 AM IST
+├── k8s/                          # Kubernetes manifests (GKE path)
+├── render.yaml                   # Render Blueprint (active deployment)
+├── docker-compose.yml            # Local dev
+└── .env.example                  # Environment variable template
 ```
 
-## Architecture Decisions
+## Cost
 
-- **API Gateway pattern** — all client traffic enters via one service; internal services are unreachable from outside (ClusterIP only)
-- **Redis cache** — today's meal plans cached for 24h; repeated mobile loads are instant
-- **GKE CronJob** — scheduler runs at 00:30 UTC (6 AM IST) so plans are ready before breakfast
-- **Kustomize overlays** — same base manifests, different resource levels for dev vs prod
-- **HPA on planner + gateway** — Claude calls are bursty; auto-scale pods 2→8 on CPU pressure
-- **Supabase in Mumbai (ap-south-1)** — co-located with GKE cluster in asia-south1 for low latency
+| Service | Cost |
+|---|---|
+| Render (all services + Redis + cron) | Free |
+| Supabase (Postgres) | Free |
+| GitHub (repo + Actions + Pages) | Free |
+| OpenAI API (~120 calls/month) | ~₹30/month |
+
+**Total: ~₹30/month for one household.**
