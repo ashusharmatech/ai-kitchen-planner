@@ -1,13 +1,13 @@
-# Render Blueprint — defines all 5 backend services
-# Render reads this file and creates/updates services automatically on push to main
+# Render Blueprint
+# Each service uses rootDir to set the build context to its own folder.
+# Render then finds Dockerfile inside that folder automatically.
 
 services:
 
   - type: web
     name: kitchen-api-gateway
     runtime: docker
-    dockerfilePath: ./services/api-gateway/Dockerfile
-    dockerContext: ./services/api-gateway
+    rootDir: services/api-gateway
     plan: free
     envVars:
       - key: HOUSEHOLD_SVC_URL
@@ -22,20 +22,18 @@ services:
   - type: web
     name: kitchen-household-svc
     runtime: docker
-    dockerfilePath: ./services/household-service/Dockerfile
-    dockerContext: ./services/household-service
+    rootDir: services/household-service
     plan: free
     envVars:
       - key: SUPABASE_URL
-        sync: false          # fill in Render dashboard — never in git
+        sync: false
       - key: SUPABASE_KEY
         sync: false
 
   - type: web
     name: kitchen-planner-svc
     runtime: docker
-    dockerfilePath: ./services/planner-service/Dockerfile
-    dockerContext: ./services/planner-service
+    rootDir: services/planner-service
     plan: free
     envVars:
       - key: OPENAI_API_KEY
@@ -57,8 +55,7 @@ services:
   - type: web
     name: kitchen-translation-svc
     runtime: docker
-    dockerfilePath: ./services/translation-service/Dockerfile
-    dockerContext: ./services/translation-service
+    rootDir: services/translation-service
     plan: free
     envVars:
       - key: OPENAI_API_KEY
@@ -67,8 +64,7 @@ services:
   - type: web
     name: kitchen-feedback-svc
     runtime: docker
-    dockerfilePath: ./services/feedback-service/Dockerfile
-    dockerContext: ./services/feedback-service
+    rootDir: services/feedback-service
     plan: free
     envVars:
       - key: SUPABASE_URL
@@ -79,9 +75,8 @@ services:
   - type: cron
     name: kitchen-morning-scheduler
     runtime: docker
-    dockerfilePath: ./services/scheduler-service/Dockerfile
-    dockerContext: ./services/scheduler-service
-    schedule: "30 0 * * *"    # 00:30 UTC = 06:00 AM IST
+    rootDir: services/scheduler-service
+    schedule: "30 0 * * *"
     envVars:
       - key: SUPABASE_URL
         sync: false
