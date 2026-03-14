@@ -1,0 +1,99 @@
+# Google Cloud Build pipeline
+# Triggered on push to main branch
+# Builds all service images, pushes to Artifact Registry, deploys to GKE
+
+substitutions:
+  _GKE_CLUSTER: kitchen-planner-cluster
+  _GKE_ZONE:    asia-south1-a
+  _GCP_PROJECT: YOUR_GCP_PROJECT_ID
+
+steps:
+# ── 1. Build all Docker images in parallel ─────────────────────────────
+- id: build-api-gateway
+  name: gcr.io/cloud-builders/docker
+  args: [build, -t, "gcr.io/$PROJECT_ID/api-gateway:$SHORT_SHA", ./services/api-gateway]
+  waitFor: ["-"]
+
+- id: build-household-service
+  name: gcr.io/cloud-builders/docker
+  args: [build, -t, "gcr.io/$PROJECT_ID/household-service:$SHORT_SHA", ./services/household-service]
+  waitFor: ["-"]
+
+- id: build-planner-service
+  name: gcr.io/cloud-builders/docker
+  args: [build, -t, "gcr.io/$PROJECT_ID/planner-service:$SHORT_SHA", ./services/planner-service]
+  waitFor: ["-"]
+
+- id: build-translation-service
+  name: gcr.io/cloud-builders/docker
+  args: [build, -t, "gcr.io/$PROJECT_ID/translation-service:$SHORT_SHA", ./services/translation-service]
+  waitFor: ["-"]
+
+- id: build-feedback-service
+  name: gcr.io/cloud-builders/docker
+  args: [build, -t, "gcr.io/$PROJECT_ID/feedback-service:$SHORT_SHA", ./services/feedback-service]
+  waitFor: ["-"]
+
+- id: build-scheduler-service
+  name: gcr.io/cloud-builders/docker
+  args: [build, -t, "gcr.io/$PROJECT_ID/scheduler-service:$SHORT_SHA", ./services/scheduler-service]
+  waitFor: ["-"]
+
+# ── 2. Push all images ─────────────────────────────────────────────────
+- id: push-all
+  name: gcr.io/cloud-builders/docker
+  entrypoint: bash
+  args:
+  - -c
+  - |
+    for svc in api-gateway household-service planner-service translation-service feedback-service scheduler-service; do
+      docker push gcr.io/$PROJECT_ID/$$svc:$SHORT_SHA
+      docker tag  gcr.io/$PROJECT_ID/$$svc:$SHORT_SHA gcr.io/$PROJECT_ID/$$svc:prod
+      docker push gcr.io/$PROJECT_ID/$$svc:prod
+    done
+  waitFor:
+  - build-api-gateway
+  - build-household-service
+  - build-planner-service
+  - build-translation-service
+  - build-feedback-service
+  - build-scheduler-service
+
+# ── 3. Deploy to GKE using kustomize prod overlay ─────────────────────
+- id: deploy
+  name: gcr.io/google.com/cloudsdktool/cloud-sdk
+  entrypoint: bash
+  args:
+  - -c
+  - |
+    gcloud container clusters get-credentials ${_GKE_CLUSTER} \
+      --zone ${_GKE_ZONE} --project ${_GCP_PROJECT}
+
+    # Update image tags in the overlay
+    cd k8s/overlays/prod
+    kustomize edit set image \
+      gcr.io/$PROJECT_ID/api-gateway:$SHORT_SHA \
+      gcr.io/$PROJECT_ID/household-service:$SHORT_SHA \
+      gcr.io/$PROJECT_ID/planner-service:$SHORT_SHA \
+      gcr.io/$PROJECT_ID/translation-service:$SHORT_SHA \
+      gcr.io/$PROJECT_ID/feedback-service:$SHORT_SHA \
+      gcr.io/$PROJECT_ID/scheduler-service:$SHORT_SHA
+
+    kubectl apply -k .
+    kubectl rollout status deployment/api-gateway        -n kitchen-planner --timeout=180s
+    kubectl rollout status deployment/planner-service    -n kitchen-planner --timeout=180s
+    kubectl rollout status deployment/household-service  -n kitchen-planner --timeout=180s
+  waitFor: [push-all]
+
+images:
+- gcr.io/$PROJECT_ID/api-gateway:$SHORT_SHA
+- gcr.io/$PROJECT_ID/household-service:$SHORT_SHA
+- gcr.io/$PROJECT_ID/planner-service:$SHORT_SHA
+- gcr.io/$PROJECT_ID/translation-service:$SHORT_SHA
+- gcr.io/$PROJECT_ID/feedback-service:$SHORT_SHA
+- gcr.io/$PROJECT_ID/scheduler-service:$SHORT_SHA
+
+timeout: 1200s
+options:
+  machineType: E2_HIGHCPU_8
+  logging: CLOUD_LOGGING_ONLY

@@ -1,0 +1,8 @@
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: kitchen-planner-cert
+  namespace: kitchen-planner
+spec:
+  domains:
+  - kitchen.yourdomain.com

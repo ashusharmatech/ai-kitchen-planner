@@ -1,0 +1,41 @@
+name: Test services on PR
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - api-gateway
+          - household-service
+          - planner-service
+          - translation-service
+          - feedback-service
+          - scheduler-service
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -r services/${{ matrix.service }}/requirements.txt
+          pip install ruff
+
+      - name: Lint with ruff
+        run: ruff check services/${{ matrix.service }}/main.py
+
+      - name: Build Docker image
+        run: |
+          docker build -t test-${{ matrix.service }} \
+            -f services/${{ matrix.service }}/Dockerfile \
+            services/${{ matrix.service }}/
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

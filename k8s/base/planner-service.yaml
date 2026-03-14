@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: planner-service
+  namespace: kitchen-planner
+  labels:
+    app: planner-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: planner-service
+  template:
+    metadata:
+      labels:
+        app: planner-service
+    spec:
+      containers:
+      - name: planner-service
+        image: gcr.io/YOUR_GCP_PROJECT_ID/planner-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8002
+        envFrom:
+        - configMapRef:
+            name: kitchen-planner-config
+        - secretRef:
+            name: kitchen-planner-secrets
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: planner-service
+  namespace: kitchen-planner
+spec:
+  selector:
+    app: planner-service
+  ports:
+  - port: 8002
+    targetPort: 8002
+  type: ClusterIP

@@ -1,0 +1,98 @@
+# Render Blueprint — defines all 5 backend services
+# Render reads this file and creates/updates services automatically on push to main
+
+services:
+
+  - type: web
+    name: kitchen-api-gateway
+    runtime: docker
+    dockerfilePath: ./services/api-gateway/Dockerfile
+    dockerContext: ./services/api-gateway
+    plan: free
+    envVars:
+      - key: HOUSEHOLD_SVC_URL
+        value: https://kitchen-household-svc.onrender.com
+      - key: PLANNER_SVC_URL
+        value: https://kitchen-planner-svc.onrender.com
+      - key: TRANSLATION_SVC_URL
+        value: https://kitchen-translation-svc.onrender.com
+      - key: FEEDBACK_SVC_URL
+        value: https://kitchen-feedback-svc.onrender.com
+
+  - type: web
+    name: kitchen-household-svc
+    runtime: docker
+    dockerfilePath: ./services/household-service/Dockerfile
+    dockerContext: ./services/household-service
+    plan: free
+    envVars:
+      - key: SUPABASE_URL
+        sync: false          # fill in Render dashboard — never in git
+      - key: SUPABASE_KEY
+        sync: false
+
+  - type: web
+    name: kitchen-planner-svc
+    runtime: docker
+    dockerfilePath: ./services/planner-service/Dockerfile
+    dockerContext: ./services/planner-service
+    plan: free
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: HOUSEHOLD_SVC_URL
+        value: https://kitchen-household-svc.onrender.com
+      - key: TRANSLATION_SVC_URL
+        value: https://kitchen-translation-svc.onrender.com
+      - key: REDIS_URL
+        fromService:
+          name: kitchen-redis
+          type: redis
+          property: connectionString
+
+  - type: web
+    name: kitchen-translation-svc
+    runtime: docker
+    dockerfilePath: ./services/translation-service/Dockerfile
+    dockerContext: ./services/translation-service
+    plan: free
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+
+  - type: web
+    name: kitchen-feedback-svc
+    runtime: docker
+    dockerfilePath: ./services/feedback-service/Dockerfile
+    dockerContext: ./services/feedback-service
+    plan: free
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+
+  - type: cron
+    name: kitchen-morning-scheduler
+    runtime: docker
+    dockerfilePath: ./services/scheduler-service/Dockerfile
+    dockerContext: ./services/scheduler-service
+    schedule: "30 0 * * *"    # 00:30 UTC = 06:00 AM IST
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: PLANNER_SVC_URL
+        value: https://kitchen-planner-svc.onrender.com
+      - key: HOUSEHOLD_SVC_URL
+        value: https://kitchen-household-svc.onrender.com
+
+  - type: redis
+    name: kitchen-redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru

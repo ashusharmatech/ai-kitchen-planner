@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: household-service
+  namespace: kitchen-planner
+  labels:
+    app: household-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: household-service
+  template:
+    metadata:
+      labels:
+        app: household-service
+    spec:
+      containers:
+      - name: household-service
+        image: gcr.io/YOUR_GCP_PROJECT_ID/household-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8001
+        envFrom:
+        - configMapRef:
+            name: kitchen-planner-config
+        - secretRef:
+            name: kitchen-planner-secrets
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: household-service
+  namespace: kitchen-planner
+spec:
+  selector:
+    app: household-service
+  ports:
+  - port: 8001
+    targetPort: 8001
+  type: ClusterIP

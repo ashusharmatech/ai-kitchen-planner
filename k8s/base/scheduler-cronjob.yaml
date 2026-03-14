@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: morning-plan-scheduler
+  namespace: kitchen-planner
+spec:
+  schedule: "30 0 * * *"   # 00:30 UTC = 06:00 IST
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: scheduler
+            image: gcr.io/YOUR_GCP_PROJECT_ID/scheduler-service:latest
+            imagePullPolicy: Always
+            envFrom:
+            - configMapRef:
+                name: kitchen-planner-config
+            - secretRef:
+                name: kitchen-planner-secrets
+            resources:
+              requests:
+                cpu: "100m"
+                memory: "128Mi"
+              limits:
+                cpu: "300m"
+                memory: "256Mi"

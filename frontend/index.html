@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>आज का खाना</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&family=Tiro+Devanagari+Sanskrit&display=swap" rel="stylesheet">
+<style>
+:root{--saffron:#E8750A;--turmeric:#D4A017;--clay:#7B3F1E;--cream:#FDF6EC;--deep:#2D1B0E;--card-bg:#FFFBF4;--muted:#8B6347;--border:rgba(120,70,30,0.12);--success:#3A7D44}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--cream);color:var(--deep);font-family:'Noto Sans Devanagari',sans-serif;min-height:100vh;padding-bottom:40px}
+.top-band{height:5px;background:repeating-linear-gradient(90deg,var(--saffron) 0,var(--saffron) 20px,var(--turmeric) 20px,var(--turmeric) 40px,#C0392B 40px,#C0392B 60px)}
+header{background:var(--deep);color:var(--cream);padding:20px 20px 16px;position:relative;overflow:hidden}
+header::before{content:'🪔';position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:36px;opacity:0.7}
+.header-label{font-size:12px;letter-spacing:2px;color:var(--turmeric);margin-bottom:4px}
+.header-date{font-family:'Tiro Devanagari Sanskrit',serif;font-size:26px;font-weight:400;line-height:1.2}
+.header-context{margin-top:6px;display:inline-block;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:3px 12px;font-size:13px;color:#F4C876}
+.generate-section{padding:16px 20px 0}
+.btn-generate{width:100%;background:var(--saffron);color:#fff;border:none;border-radius:12px;padding:14px;font-family:'Noto Sans Devanagari',sans-serif;font-size:16px;font-weight:600;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-generate:active{transform:scale(0.98)}
+.btn-generate:disabled{background:#ccc;cursor:not-allowed}
+.btn-generate .spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;display:none}
+.btn-generate.loading .spinner{display:block}
+.btn-generate.loading .btn-text{display:none}
+.context-row{padding:12px 20px 0;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
+.context-row::-webkit-scrollbar{display:none}
+.ctx-chip{flex-shrink:0;border:1.5px solid var(--border);background:var(--card-bg);color:var(--muted);border-radius:20px;padding:6px 14px;font-size:13px;font-family:'Noto Sans Devanagari',sans-serif;cursor:pointer;transition:all 0.15s}
+.ctx-chip.active{border-color:var(--saffron);background:#FFF3E0;color:var(--clay);font-weight:600}
+.day-note{margin:14px 20px 0;background:#FFF8E1;border-left:3px solid var(--turmeric);border-radius:0 8px 8px 0;padding:10px 14px;font-size:14px;color:var(--clay);display:none}
+.day-note.visible{display:block}
+.meals-grid{padding:16px 20px 0;display:flex;flex-direction:column;gap:14px}
+.meal-card{background:var(--card-bg);border:1px solid var(--border);border-radius:16px;overflow:hidden;animation:slideUp 0.4s ease both;box-shadow:0 2px 8px rgba(45,27,14,0.06)}
+.meal-card:nth-child(1){animation-delay:0.05s}
+.meal-card:nth-child(2){animation-delay:0.12s}
+.meal-card:nth-child(3){animation-delay:0.19s}
+.meal-card:nth-child(4){animation-delay:0.26s}
+.meal-header{display:flex;align-items:center;gap:10px;padding:12px 16px 10px;border-bottom:1px solid var(--border)}
+.meal-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.meal-time-label{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.meal-time-hindi{font-size:15px;font-weight:700;color:var(--clay);line-height:1.2;margin-top:1px}
+.prep-badge{margin-left:auto;background:#F1F8F2;color:var(--success);border-radius:10px;padding:3px 9px;font-size:12px;font-weight:600;white-space:nowrap}
+.meal-body{padding:12px 16px 14px}
+.meal-name-hi{font-family:'Tiro Devanagari Sanskrit',serif;font-size:20px;font-weight:400;color:var(--deep);line-height:1.3;margin-bottom:6px}
+.meal-desc-hi{font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:10px}
+.ingredients-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.ingr-tag{background:rgba(120,70,30,0.07);color:var(--clay);border-radius:6px;padding:3px 10px;font-size:12px}
+.feedback-bar{display:flex;align-items:center;gap:8px;padding:10px 16px;border-top:1px solid var(--border);background:rgba(0,0,0,0.015)}
+.feedback-label{font-size:12px;color:var(--muted);flex:1}
+.star-btn{background:none;border:none;font-size:20px;cursor:pointer;padding:2px;line-height:1;transition:transform 0.1s;opacity:0.35}
+.star-btn:active{transform:scale(1.3)}
+.star-btn.lit{opacity:1}
+.made-btn{background:none;border:1.5px solid var(--border);border-radius:8px;padding:4px 10px;font-size:12px;font-family:'Noto Sans Devanagari',sans-serif;color:var(--muted);cursor:pointer;margin-left:4px;transition:all 0.15s}
+.made-btn.done{background:#E8F5E9;border-color:var(--success);color:var(--success)}
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-icon{font-size:56px;margin-bottom:12px}
+.empty-title{font-size:18px;font-weight:600;color:var(--clay);margin-bottom:6px}
+.empty-sub{font-size:14px;line-height:1.6}
+.error-banner{margin:14px 20px 0;background:#FFF0F0;border:1px solid #FFCDD2;border-radius:10px;padding:10px 14px;font-size:14px;color:#C62828;display:none}
+.error-banner.visible{display:block}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div class="top-band"></div>
+<header>
+  <div class="header-label">आज का खाना — AI Kitchen Planner</div>
+  <div class="header-date" id="headerDate">आज का दिन</div>
+  <div class="header-context" id="headerCtx">सामान्य दिन</div>
+</header>
+<div class="context-row" id="contextRow">
+  <div class="ctx-chip active" data-ctx="normal">सामान्य</div>
+  <div class="ctx-chip" data-ctx="fasting">उपवास</div>
+  <div class="ctx-chip" data-ctx="guests">मेहमान</div>
+  <div class="ctx-chip" data-ctx="weekend">छुट्टी</div>
+  <div class="ctx-chip" data-ctx="festival">त्योहार</div>
+</div>
+<div class="generate-section">
+  <button class="btn-generate" id="generateBtn" onclick="generatePlan()">
+    <div class="spinner"></div>
+    <span class="btn-text">🍽️ &nbsp; आज का मेनू बनाएं</span>
+  </button>
+</div>
+<div class="error-banner" id="errorBanner"></div>
+<div class="day-note" id="dayNote"></div>
+<div class="meals-grid" id="mealsGrid">
+  <div class="empty-state">
+    <div class="empty-icon">🫕</div>
+    <div class="empty-title">नमस्ते!</div>
+    <div class="empty-sub">ऊपर बटन दबाएं और Claude आपके लिए<br>आज का पूरा मेनू बनाएगा।</div>
+  </div>
+</div>
+<script>
+const API='https://kitchen-api-gateway.onrender.com';
+const HOUSEHOLD_ID='11111111-1111-1111-1111-111111111111';
+let selectedCtx='normal';
+let currentPlanId=null;
+const MEALS=[
+  {key:'breakfast',icon:'☀️',iconBg:'#FFF9C4',label:'Breakfast',hindi:'नाश्ता'},
+  {key:'lunch',icon:'🍛',iconBg:'#FBE9E7',label:'Lunch',hindi:'दोपहर का खाना'},
+  {key:'snack',icon:'🍵',iconBg:'#E8F5E9',label:'Snack',hindi:'शाम की चाय'},
+  {key:'dinner',icon:'🌙',iconBg:'#EDE7F6',label:'Dinner',hindi:'रात का खाना'},
+];
+const CTX_LABELS={normal:'सामान्य दिन',fasting:'उपवास का दिन',guests:'मेहमान हैं',weekend:'छुट्टी का दिन',festival:'त्योहार'};
+function setHeaderDate(){
+  const d=new Date();
+  const days=['रविवार','सोमवार','मंगलवार','बुधवार','गुरुवार','शुक्रवार','शनिवार'];
+  const months=['जनवरी','फरवरी','मार्च','अप्रैल','मई','जून','जुलाई','अगस्त','सितंबर','अक्टूबर','नवंबर','दिसंबर'];
+  document.getElementById('headerDate').textContent=days[d.getDay()]+', '+d.getDate()+' '+months[d.getMonth()];
+}
+document.getElementById('contextRow').addEventListener('click',e=>{
+  const chip=e.target.closest('.ctx-chip');
+  if(!chip)return;
+  document.querySelectorAll('.ctx-chip').forEach(c=>c.classList.remove('active'));
+  chip.classList.add('active');
+  selectedCtx=chip.dataset.ctx;
+  document.getElementById('headerCtx').textContent=CTX_LABELS[selectedCtx];
+});
+async function setContext(){
+  try{await fetch(API+'/api/context',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({household_id:HOUSEHOLD_ID,context_type:selectedCtx})})}catch(e){}
+}
+async function generatePlan(){
+  const btn=document.getElementById('generateBtn');
+  const err=document.getElementById('errorBanner');
+  err.classList.remove('visible');
+  btn.classList.add('loading');btn.disabled=true;
+  await setContext();
+  try{
+    const res=await fetch(API+'/api/generate-plan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({household_id:HOUSEHOLD_ID,regenerate:false})});
+    if(!res.ok)throw new Error('Server error: '+res.status);
+    const data=await res.json();
+    currentPlanId=data.plan_id;
+    renderPlan(data.plan);
+  }catch(e){
+    err.textContent='माफ़ करें, कुछ गड़बड़ हुई। कृपया दोबारा कोशिश करें। ('+e.message+')';
+    err.classList.add('visible');
+  }finally{btn.classList.remove('loading');btn.disabled=false}
+}
+function renderPlan(plan){
+  const grid=document.getElementById('mealsGrid');
+  const note=document.getElementById('dayNote');
+  if(plan.day_note_hi){note.textContent='💬 '+plan.day_note_hi;note.classList.add('visible')}
+  grid.innerHTML='';
+  MEALS.forEach(m=>{
+    const meal=plan[m.key];
+    if(!meal)return;
+    const card=document.createElement('div');
+    card.className='meal-card';
+    card.innerHTML=`
+      <div class="meal-header">
+        <div class="meal-icon" style="background:${m.iconBg}">${m.icon}</div>
+        <div>
+          <div class="meal-time-label">${m.label}</div>
+          <div class="meal-time-hindi">${m.hindi}</div>
+        </div>
+        ${meal.prep_time_mins?`<div class="prep-badge">⏱ ${meal.prep_time_mins} मिनट</div>`:''}
+      </div>
+      <div class="meal-body">
+        <div class="meal-name-hi">${meal.name_hi||meal.name_en}</div>
+        <div class="meal-desc-hi">${meal.description_hi||''}</div>
+        ${meal.ingredients_needed&&meal.ingredients_needed.length?`<div class="ingredients-row">${meal.ingredients_needed.map(i=>`<span class="ingr-tag">${i}</span>`).join('')}</div>`:''}
+      </div>
+      <div class="feedback-bar">
+        <span class="feedback-label">कैसा लगा?</span>
+        ${[1,2,3,4,5].map(n=>`<button class="star-btn" onclick="rateMeal('${m.key}',${n},this)">⭐</button>`).join('')}
+        <button class="made-btn" onclick="markMade(this,'${m.key}')">बना दिया ✓</button>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+async function rateMeal(mealType,rating,starEl){
+  const bar=starEl.closest('.feedback-bar');
+  bar.querySelectorAll('.star-btn').forEach((s,i)=>s.classList.toggle('lit',i<rating));
+  if(!currentPlanId)return;
+  try{await fetch(API+'/api/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({meal_plan_id:currentPlanId,meal_type:mealType,rating,made:false})})}catch(e){}
+}
+function markMade(btn,mealType){
+  btn.classList.toggle('done');
+  btn.textContent=btn.classList.contains('done')?'✅ बन गया!':'बना दिया ✓';
+}
+setHeaderDate();
+</script>
+</body>
+</html>

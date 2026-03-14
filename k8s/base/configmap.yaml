@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kitchen-planner-config
+  namespace: kitchen-planner
+data:
+  HOUSEHOLD_SVC_URL:   "http://household-service:8001"
+  PLANNER_SVC_URL:     "http://planner-service:8002"
+  TRANSLATION_SVC_URL: "http://translation-service:8003"
+  FEEDBACK_SVC_URL:    "http://feedback-service:8004"
+  REDIS_URL:           "redis://redis:6379"
+  # AI provider
+  OPENAI_MODEL:        "gpt-4o-mini"

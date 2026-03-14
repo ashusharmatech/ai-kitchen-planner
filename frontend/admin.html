@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kitchen Planner — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F7F4EF;
+  --surface: #FFFFFF;
+  --deep: #1C1612;
+  --muted: #6B5E52;
+  --border: #E2D9CF;
+  --accent: #C4510A;
+  --accent-light: #FDF0E8;
+  --green: #2E7D32;
+  --green-light: #EDF7EE;
+  --red: #C62828;
+  --red-light: #FFF0F0;
+  --yellow: #E65100;
+  --yellow-light: #FFF3E0;
+  --shadow: 0 1px 3px rgba(28,22,18,0.08), 0 1px 2px rgba(28,22,18,0.04);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--deep); font-family:'DM Sans',sans-serif; font-size:15px; }
+
+/* Layout */
+.shell { display:flex; min-height:100vh; }
+.sidebar { width:220px; background:var(--deep); color:#E8DDD4; flex-shrink:0; display:flex; flex-direction:column; position:fixed; top:0; left:0; height:100vh; }
+.sidebar-logo { padding:24px 20px 16px; border-bottom:1px solid rgba(255,255,255,0.08); }
+.sidebar-logo .brand { font-size:16px; font-weight:600; color:#fff; }
+.sidebar-logo .sub { font-size:12px; color:#A09080; margin-top:2px; }
+nav { flex:1; padding:12px 0; }
+.nav-item { display:flex; align-items:center; gap:10px; padding:10px 20px; font-size:14px; color:#A09080; cursor:pointer; transition:all 0.15s; border-left:3px solid transparent; }
+.nav-item:hover { color:#fff; background:rgba(255,255,255,0.05); }
+.nav-item.active { color:#fff; background:rgba(255,255,255,0.07); border-left-color:var(--accent); }
+.nav-icon { font-size:16px; width:20px; text-align:center; }
+.main { margin-left:220px; flex:1; }
+.topbar { background:var(--surface); border-bottom:1px solid var(--border); padding:0 32px; height:56px; display:flex; align-items:center; justify-content:space-between; box-shadow:var(--shadow); }
+.topbar-title { font-size:16px; font-weight:600; }
+.topbar-household { font-size:13px; color:var(--muted); background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:4px 12px; }
+.content { padding:28px 32px; }
+
+/* Tabs */
+.tab-panels > .panel { display:none; }
+.tab-panels > .panel.active { display:block; }
+
+/* Cards */
+.card { background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); }
+.card-header { padding:16px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.card-title { font-size:15px; font-weight:600; }
+.card-body { padding:20px; }
+
+/* Stats row */
+.stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+.stat-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:16px 20px; }
+.stat-label { font-size:12px; color:var(--muted); font-weight:500; letter-spacing:0.3px; margin-bottom:6px; }
+.stat-value { font-size:26px; font-weight:600; line-height:1; }
+.stat-sub { font-size:12px; color:var(--muted); margin-top:4px; }
+
+/* Table */
+table { width:100%; border-collapse:collapse; font-size:14px; }
+th { text-align:left; padding:10px 14px; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.4px; border-bottom:1px solid var(--border); background:var(--bg); }
+td { padding:12px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:#FAFAF8; }
+
+/* Badges */
+.badge { display:inline-flex; align-items:center; gap:4px; border-radius:6px; padding:3px 10px; font-size:12px; font-weight:500; }
+.badge-green { background:var(--green-light); color:var(--green); }
+.badge-red { background:var(--red-light); color:var(--red); }
+.badge-yellow { background:var(--yellow-light); color:var(--yellow); }
+.badge-gray { background:var(--bg); color:var(--muted); border:1px solid var(--border); }
+
+/* Toggle switch */
+.toggle { position:relative; width:36px; height:20px; cursor:pointer; }
+.toggle input { opacity:0; width:0; height:0; }
+.toggle-track { position:absolute; inset:0; background:#D1C4B8; border-radius:10px; transition:background 0.2s; }
+.toggle input:checked + .toggle-track { background:var(--green); }
+.toggle-thumb { position:absolute; top:2px; left:2px; width:16px; height:16px; background:#fff; border-radius:50%; transition:transform 0.2s; box-shadow:0 1px 2px rgba(0,0,0,0.2); }
+.toggle input:checked ~ .toggle-thumb { transform:translateX(16px); }
+
+/* Buttons */
+.btn { display:inline-flex; align-items:center; gap:6px; border:none; border-radius:8px; padding:8px 16px; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:500; cursor:pointer; transition:all 0.15s; }
+.btn-primary { background:var(--accent); color:#fff; }
+.btn-primary:hover { background:#A8420A; }
+.btn-secondary { background:var(--surface); color:var(--deep); border:1px solid var(--border); }
+.btn-secondary:hover { background:var(--bg); }
+.btn-sm { padding:5px 12px; font-size:13px; }
+.btn-danger { background:var(--red-light); color:var(--red); }
+
+/* Form elements */
+input[type=text], select, textarea {
+  font-family:'DM Sans',sans-serif; font-size:14px;
+  border:1px solid var(--border); border-radius:8px;
+  padding:8px 12px; background:var(--surface); color:var(--deep);
+  width:100%; outline:none; transition:border 0.15s;
+}
+input[type=text]:focus, select:focus, textarea:focus { border-color:var(--accent); }
+.form-row { display:grid; gap:12px; margin-bottom:14px; }
+.form-row.cols-2 { grid-template-columns:1fr 1fr; }
+.form-row.cols-3 { grid-template-columns:1fr 1fr 1fr; }
+label.field-label { display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.3px; }
+
+/* Context picker */
+.ctx-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; }
+.ctx-card { border:2px solid var(--border); border-radius:10px; padding:14px 10px; text-align:center; cursor:pointer; transition:all 0.15s; background:var(--surface); }
+.ctx-card:hover { border-color:#C4A090; }
+.ctx-card.selected { border-color:var(--accent); background:var(--accent-light); }
+.ctx-card .ctx-icon { font-size:24px; margin-bottom:6px; }
+.ctx-card .ctx-name { font-size:13px; font-weight:600; color:var(--deep); }
+.ctx-card .ctx-hint { font-size:11px; color:var(--muted); margin-top:2px; }
+
+/* Meal plan preview */
+.plan-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-top:16px; }
+.plan-card { border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+.plan-card-head { padding:10px 14px; display:flex; align-items:center; gap:8px; font-weight:600; font-size:14px; }
+.plan-card-body { padding:12px 14px; }
+.plan-meal-en { font-size:13px; font-weight:600; color:var(--deep); }
+.plan-meal-hi { font-size:13px; color:var(--muted); font-family:'Noto Sans Devanagari',sans-serif; margin-top:2px; }
+.plan-desc { font-size:12px; color:var(--muted); margin-top:6px; line-height:1.5; }
+.plan-tags { display:flex; flex-wrap:wrap; gap:4px; margin-top:8px; }
+.plan-tag { background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:2px 8px; font-size:11px; color:var(--muted); }
+
+/* Loading overlay */
+.loading-overlay { display:none; position:fixed; inset:0; background:rgba(28,22,18,0.4); z-index:100; align-items:center; justify-content:center; }
+.loading-overlay.visible { display:flex; }
+.loading-box { background:var(--surface); border-radius:14px; padding:28px 36px; text-align:center; box-shadow:0 20px 60px rgba(28,22,18,0.2); }
+.loading-spinner { width:32px; height:32px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.7s linear infinite; margin:0 auto 12px; }
+.loading-text { font-size:14px; color:var(--muted); }
+
+/* Toast */
+.toast { position:fixed; bottom:24px; right:24px; background:var(--deep); color:#fff; border-radius:10px; padding:12px 18px; font-size:14px; box-shadow:0 8px 24px rgba(0,0,0,0.2); transform:translateY(80px); opacity:0; transition:all 0.3s; z-index:200; max-width:320px; }
+.toast.show { transform:translateY(0); opacity:1; }
+.toast.success { background:var(--green); }
+.toast.error { background:var(--red); }
+
+@keyframes spin { to { transform:rotate(360deg); } }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-box">
+    <div class="loading-spinner"></div>
+    <div class="loading-text" id="loadingText">Claude is thinking...</div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<div class="shell">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="brand">🍳 Kitchen Planner</div>
+      <div class="sub">Admin Dashboard</div>
+    </div>
+    <nav>
+      <div class="nav-item active" onclick="showPanel('dashboard')"><span class="nav-icon">📊</span> Dashboard</div>
+      <div class="nav-item" onclick="showPanel('plan')"><span class="nav-icon">🍽️</span> Today's Plan</div>
+      <div class="nav-item" onclick="showPanel('ingredients')"><span class="nav-icon">🥦</span> Ingredients</div>
+      <div class="nav-item" onclick="showPanel('context')"><span class="nav-icon">📅</span> Day Context</div>
+      <div class="nav-item" onclick="showPanel('history')"><span class="nav-icon">📜</span> History</div>
+      <div class="nav-item" onclick="showPanel('preferences')"><span class="nav-icon">⚙️</span> Preferences</div>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="panelTitle">Dashboard</div>
+      <div class="topbar-household" id="householdLabel">🏠 Loading...</div>
+    </div>
+
+    <div class="content">
+      <div class="tab-panels">
+
+        <!-- DASHBOARD -->
+        <div class="panel active" id="panel-dashboard">
+          <div class="stats-row" id="statsRow">
+            <div class="stat-card"><div class="stat-label">Household Members</div><div class="stat-value" id="statMembers">—</div></div>
+            <div class="stat-card"><div class="stat-label">Ingredients Available</div><div class="stat-value" id="statIngredients">—</div></div>
+            <div class="stat-card"><div class="stat-label">Plans Generated</div><div class="stat-value" id="statPlans">—</div></div>
+            <div class="stat-card"><div class="stat-label">Today's Context</div><div class="stat-value" id="statContext" style="font-size:18px">—</div></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Quick Actions</div>
+              <div id="todayBadge"></div>
+            </div>
+            <div class="card-body" style="display:flex;gap:12px;flex-wrap:wrap;">
+              <button class="btn btn-primary" onclick="generatePlan(false)">🤖 Generate Today's Plan</button>
+              <button class="btn btn-secondary" onclick="generatePlan(true)">🔄 Regenerate Plan</button>
+              <button class="btn btn-secondary" onclick="showPanel('ingredients')">🥦 Update Ingredients</button>
+              <button class="btn btn-secondary" onclick="showPanel('context')">📅 Set Day Context</button>
+              <a href="index.html" target="_blank" class="btn btn-secondary">📱 Open Cook View</a>
+            </div>
+          </div>
+          <div style="margin-top:20px;" id="dashPlanPreview"></div>
+        </div>
+
+        <!-- TODAY'S PLAN -->
+        <div class="panel" id="panel-plan">
+          <div style="display:flex;gap:12px;margin-bottom:20px;">
+            <button class="btn btn-primary" onclick="generatePlan(false)">🤖 Generate Plan</button>
+            <button class="btn btn-secondary" onclick="generatePlan(true)">🔄 Force Regenerate</button>
+            <a href="index.html" target="_blank" class="btn btn-secondary">📱 Cook View →</a>
+          </div>
+          <div id="planView"><div style="color:var(--muted);font-size:14px;">No plan loaded. Click Generate Plan above.</div></div>
+        </div>
+
+        <!-- INGREDIENTS -->
+        <div class="panel" id="panel-ingredients">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Pantry Inventory</div>
+              <button class="btn btn-primary btn-sm" onclick="openAddIngredient()">+ Add Ingredient</button>
+            </div>
+            <div id="addIngredientForm" style="display:none;padding:16px 20px;border-bottom:1px solid var(--border);background:var(--bg);">
+              <div class="form-row cols-3">
+                <div><label class="field-label">Name (English)</label><input type="text" id="newIngrEn" placeholder="e.g. Spinach"></div>
+                <div><label class="field-label">Name (Hindi)</label><input type="text" id="newIngrHi" placeholder="पालक"></div>
+                <div><label class="field-label">Quantity</label><input type="text" id="newIngrQty" placeholder="e.g. 250g"></div>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn btn-primary btn-sm" onclick="addIngredient()">Add</button>
+                <button class="btn btn-secondary btn-sm" onclick="closeAddIngredient()">Cancel</button>
+              </div>
+            </div>
+            <table id="ingredientTable">
+              <thead><tr><th>Ingredient</th><th>Hindi</th><th>Quantity</th><th>Available</th><th>Action</th></tr></thead>
+              <tbody id="ingredientBody"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:32px;">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- CONTEXT -->
+        <div class="panel" id="panel-context">
+          <div class="card" style="max-width:600px;">
+            <div class="card-header"><div class="card-title">Set Today's Context</div></div>
+            <div class="card-body">
+              <p style="font-size:14px;color:var(--muted);margin-bottom:20px;">Tell Claude what kind of day it is. This shapes the entire meal plan.</p>
+              <div class="ctx-grid" id="ctxGrid">
+                <div class="ctx-card selected" data-ctx="normal" onclick="selectCtx(this)">
+                  <div class="ctx-icon">🌤️</div><div class="ctx-name">Normal</div><div class="ctx-hint">Regular day</div>
+                </div>
+                <div class="ctx-card" data-ctx="fasting" onclick="selectCtx(this)">
+                  <div class="ctx-icon">🙏</div><div class="ctx-name">Fasting</div><div class="ctx-hint">Upvaas</div>
+                </div>
+                <div class="ctx-card" data-ctx="guests" onclick="selectCtx(this)">
+                  <div class="ctx-icon">👨‍👩‍👧‍👦</div><div class="ctx-name">Guests</div><div class="ctx-hint">Mehmaan</div>
+                </div>
+                <div class="ctx-card" data-ctx="weekend" onclick="selectCtx(this)">
+                  <div class="ctx-icon">🎉</div><div class="ctx-name">Weekend</div><div class="ctx-hint">Chutti</div>
+                </div>
+                <div class="ctx-card" data-ctx="festival" onclick="selectCtx(this)">
+                  <div class="ctx-icon">🪔</div><div class="ctx-name">Festival</div><div class="ctx-hint">Tyohaar</div>
+                </div>
+              </div>
+              <div style="margin-top:16px;">
+                <label class="field-label">Additional Notes (optional)</label>
+                <input type="text" id="ctxNotes" placeholder="e.g. Ekadashi fast, 10 guests for dinner...">
+              </div>
+              <div style="margin-top:16px;display:flex;gap:10px;">
+                <button class="btn btn-primary" onclick="saveContext()">💾 Save Context</button>
+                <button class="btn btn-primary" onclick="saveAndGenerate()">🤖 Save & Generate Plan</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- HISTORY -->
+        <div class="panel" id="panel-history">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Meal Plan History (Last 7 Days)</div></div>
+            <table>
+              <thead><tr><th>Date</th><th>Breakfast</th><th>Lunch</th><th>Snack</th><th>Dinner</th></tr></thead>
+              <tbody id="historyBody"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:32px;">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- PREFERENCES -->
+        <div class="panel" id="panel-preferences">
+          <div class="card" style="max-width:560px;">
+            <div class="card-header"><div class="card-title">Dietary Preferences</div></div>
+            <div class="card-body">
+              <p style="font-size:14px;color:var(--muted);margin-bottom:16px;">These are passed to Claude on every generation.</p>
+              <div id="prefList" style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;"></div>
+              <div style="display:flex;gap:8px;">
+                <input type="text" id="newPrefInput" placeholder="Add preference, e.g. no_onion, jain, satvik..." style="flex:1">
+                <button class="btn btn-primary" onclick="addPreference()">Add</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'https://kitchen-api-gateway.onrender.com';
+const HOUSEHOLD_ID = '11111111-1111-1111-1111-111111111111';
+const SUPABASE_URL = 'https://cfcviixmuchtzynetphq.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmY3ZpaXhtdWNodHp5bmV0cGhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MjM4MjgsImV4cCI6MjA4ODk5OTgyOH0.nNnRFgdJaq-N66-Pjd8bDIoOzOVIy2p90J-AV7KiDjc';
+
+let selectedCtxType = 'normal';
+let allIngredients = [];
+
+const PANEL_TITLES = { dashboard:'Dashboard', plan:"Today's Plan", ingredients:'Ingredients', context:'Day Context', history:'History', preferences:'Preferences' };
+const MEAL_META = [
+  { key:'breakfast', icon:'☀️', color:'#FFFDE7' },
+  { key:'lunch',     icon:'🍛', color:'#FBE9E7' },
+  { key:'snack',     icon:'🍵', color:'#E8F5E9' },
+  { key:'dinner',    icon:'🌙', color:'#EDE7F6' },
+];
+
+function showPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => { if (n.textContent.trim().toLowerCase().includes(name.slice(0,4).toLowerCase())) n.classList.add('active'); });
+  document.getElementById('panelTitle').textContent = PANEL_TITLES[name];
+  if (name === 'ingredients') loadIngredients();
+  if (name === 'history') loadHistory();
+  if (name === 'preferences') loadPreferences();
+}
+
+// Supabase direct query helper
+async function sbFetch(path, opts={}) {
+  const r = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
+    ...opts,
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation', ...(opts.headers||{}) }
+  });
+  if (!r.ok) throw new Error(await r.text());
+  const txt = await r.text();
+  return txt ? JSON.parse(txt) : [];
+}
+
+function showLoading(text='Claude is thinking...') { document.getElementById('loadingText').textContent = text; document.getElementById('loadingOverlay').classList.add('visible'); }
+function hideLoading() { document.getElementById('loadingOverlay').classList.remove('visible'); }
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast ' + type + ' show';
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── Dashboard ──────────────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const [hh, ingr, plans] = await Promise.all([
+      sbFetch('households?id=eq.' + HOUSEHOLD_ID),
+      sbFetch('ingredients?household_id=eq.' + HOUSEHOLD_ID + '&available=eq.true'),
+      sbFetch('meal_plans?household_id=eq.' + HOUSEHOLD_ID + '&order=plan_date.desc&limit=1')
+    ]);
+    if (hh[0]) {
+      document.getElementById('statMembers').textContent = hh[0].member_count;
+      document.getElementById('householdLabel').textContent = '🏠 ' + hh[0].name;
+    }
+    document.getElementById('statIngredients').textContent = ingr.length;
+    document.getElementById('statPlans').textContent = plans.length ? plans[0].plan_date : 'None';
+    document.getElementById('statContext').textContent = selectedCtxType === 'normal' ? '🌤️ Normal' : selectedCtxType;
+
+    if (plans[0] && plans[0].full_plan_json) {
+      renderPlanCards(plans[0].full_plan_json, 'dashPlanPreview');
+    }
+  } catch(e) { console.error(e); }
+}
+
+// ── Plan Generation ────────────────────────────────────────
+async function generatePlan(regen=false) {
+  showLoading(regen ? 'Asking Claude to create a fresh plan...' : 'Checking for existing plan...');
+  try {
+    const res = await fetch(API + '/api/generate-plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ household_id: HOUSEHOLD_ID, regenerate: regen })
+    });
+    if (!res.ok) throw new Error('API error ' + res.status);
+    const data = await res.json();
+    renderPlanCards(data.plan, 'planView');
+    renderPlanCards(data.plan, 'dashPlanPreview');
+    showToast(data.cached ? '✅ Loaded existing plan' : '✅ New plan generated!');
+    showPanel('plan');
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  } finally { hideLoading(); }
+}
+
+function renderPlanCards(plan, containerId) {
+  const el = document.getElementById(containerId);
+  if (!el || !plan) return;
+  el.innerHTML = `<div class="plan-grid">${MEAL_META.map(m => {
+    const meal = plan[m.key];
+    if (!meal) return '';
+    return `<div class="plan-card">
+      <div class="plan-card-head" style="background:${m.color}">${m.icon} ${m.key.charAt(0).toUpperCase()+m.key.slice(1)}</div>
+      <div class="plan-card-body">
+        <div class="plan-meal-en">${meal.name_en||''}</div>
+        <div class="plan-meal-hi">${meal.name_hi||''}</div>
+        <div class="plan-desc">${meal.description_hi||''}</div>
+        ${meal.ingredients_needed ? `<div class="plan-tags">${meal.ingredients_needed.map(i=>`<span class="plan-tag">${i}</span>`).join('')}</div>` : ''}
+        ${meal.prep_time_mins ? `<div style="margin-top:8px;font-size:12px;color:var(--muted)">⏱ ${meal.prep_time_mins} min</div>` : ''}
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+  if (plan.day_note_hi) {
+    el.innerHTML = `<div style="background:#FFF8E1;border-left:3px solid #D4A017;border-radius:0 8px 8px 0;padding:10px 16px;font-size:13px;color:#7B3F1E;margin-bottom:16px;">💬 ${plan.day_note_hi}</div>` + el.innerHTML;
+  }
+}
+
+// ── Ingredients ────────────────────────────────────────────
+async function loadIngredients() {
+  try {
+    allIngredients = await sbFetch('ingredients?household_id=eq.' + HOUSEHOLD_ID + '&order=name_en');
+    renderIngredients();
+  } catch(e) { showToast('Failed to load ingredients', 'error'); }
+}
+
+function renderIngredients() {
+  const tbody = document.getElementById('ingredientBody');
+  if (!allIngredients.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:32px;">No ingredients yet.</td></tr>'; return; }
+  tbody.innerHTML = allIngredients.map(i => `
+    <tr>
+      <td><strong>${i.name_en}</strong></td>
+      <td style="font-family:'Noto Sans Devanagari',sans-serif">${i.name_hi||'—'}</td>
+      <td><span class="badge badge-gray">${i.quantity||'—'}</span></td>
+      <td>
+        <label class="toggle">
+          <input type="checkbox" ${i.available ? 'checked' : ''} onchange="toggleIngredient('${i.id}', this.checked)">
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+      </td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteIngredient('${i.id}')">Remove</button></td>
+    </tr>`).join('');
+}
+
+async function toggleIngredient(id, available) {
+  try {
+    await sbFetch('ingredients?id=eq.' + id, { method:'PATCH', body: JSON.stringify({ available, updated_at: new Date().toISOString() }) });
+    allIngredients = allIngredients.map(i => i.id === id ? {...i, available} : i);
+    showToast(available ? '✅ Marked available' : '⚠️ Marked unavailable');
+  } catch(e) { showToast('Update failed', 'error'); await loadIngredients(); }
+}
+
+function openAddIngredient() { document.getElementById('addIngredientForm').style.display = 'block'; document.getElementById('newIngrEn').focus(); }
+function closeAddIngredient() { document.getElementById('addIngredientForm').style.display = 'none'; }
+
+async function addIngredient() {
+  const name_en = document.getElementById('newIngrEn').value.trim();
+  const name_hi = document.getElementById('newIngrHi').value.trim();
+  const quantity = document.getElementById('newIngrQty').value.trim();
+  if (!name_en) { showToast('Please enter ingredient name', 'error'); return; }
+  try {
+    await sbFetch('ingredients', { method:'POST', body: JSON.stringify({ household_id: HOUSEHOLD_ID, name_en, name_hi, quantity, available: true }) });
+    showToast('✅ Ingredient added');
+    closeAddIngredient();
+    document.getElementById('newIngrEn').value = '';
+    document.getElementById('newIngrHi').value = '';
+    document.getElementById('newIngrQty').value = '';
+    await loadIngredients();
+  } catch(e) { showToast('Failed to add: ' + e.message, 'error'); }
+}
+
+async function deleteIngredient(id) {
+  if (!confirm('Remove this ingredient?')) return;
+  try {
+    await sbFetch('ingredients?id=eq.' + id, { method:'DELETE' });
+    showToast('Removed');
+    await loadIngredients();
+  } catch(e) { showToast('Delete failed', 'error'); }
+}
+
+// ── Context ────────────────────────────────────────────────
+function selectCtx(el) {
+  document.querySelectorAll('.ctx-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedCtxType = el.dataset.ctx;
+}
+
+async function saveContext() {
+  const notes = document.getElementById('ctxNotes').value.trim();
+  try {
+    await fetch(API + '/api/context', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ household_id: HOUSEHOLD_ID, context_type: selectedCtxType, notes: notes || null })
+    });
+    showToast('✅ Context saved for today');
+    document.getElementById('statContext').textContent = selectedCtxType;
+  } catch(e) { showToast('Save failed: ' + e.message, 'error'); }
+}
+
+async function saveAndGenerate() {
+  await saveContext();
+  await generatePlan(true);
+}
+
+// ── History ────────────────────────────────────────────────
+async function loadHistory() {
+  try {
+    const data = await sbFetch('meal_plans?household_id=eq.' + HOUSEHOLD_ID + '&order=plan_date.desc&limit=7');
+    const tbody = document.getElementById('historyBody');
+    if (!data.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:32px;">No meal history yet.</td></tr>'; return; }
+    tbody.innerHTML = data.map(r => `
+      <tr>
+        <td><strong>${r.plan_date}</strong></td>
+        <td>${r.breakfast_hi || r.breakfast_en || '—'}</td>
+        <td>${r.lunch_hi || r.lunch_en || '—'}</td>
+        <td>${r.snack_hi || r.snack_en || '—'}</td>
+        <td>${r.dinner_hi || r.dinner_en || '—'}</td>
+      </tr>`).join('');
+  } catch(e) { showToast('Failed to load history', 'error'); }
+}
+
+// ── Preferences ────────────────────────────────────────────
+async function loadPreferences() {
+  try {
+    const data = await sbFetch('dietary_preferences?household_id=eq.' + HOUSEHOLD_ID);
+    const list = document.getElementById('prefList');
+    list.innerHTML = data.map(p => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg);border-radius:8px;border:1px solid var(--border);">
+        <span class="badge badge-green">✓ ${p.preference_key}</span>
+        <button class="btn btn-danger btn-sm" onclick="deletePref('${p.id}')">Remove</button>
+      </div>`).join('') || '<div style="color:var(--muted);font-size:14px;">No preferences set.</div>';
+  } catch(e) {}
+}
+
+async function addPreference() {
+  const key = document.getElementById('newPrefInput').value.trim().replace(/\s+/g,'_').toLowerCase();
+  if (!key) return;
+  try {
+    await sbFetch('dietary_preferences', { method:'POST', body: JSON.stringify({ household_id: HOUSEHOLD_ID, preference_key: key }) });
+    document.getElementById('newPrefInput').value = '';
+    showToast('✅ Preference added');
+    await loadPreferences();
+  } catch(e) { showToast('Failed: ' + e.message, 'error'); }
+}
+
+async function deletePref(id) {
+  try {
+    await sbFetch('dietary_preferences?id=eq.' + id, { method:'DELETE' });
+    showToast('Preference removed');
+    await loadPreferences();
+  } catch(e) { showToast('Delete failed', 'error'); }
+}
+
+// Init
+loadDashboard();
+</script>
+</body>
+</html>

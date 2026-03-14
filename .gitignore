@@ -1,0 +1,24 @@
+# Secrets — NEVER commit these
+.env
+*.env
+k8s/base/secrets.yaml
+k8s/overlays/*/secrets.yaml
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Docker
+.docker/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

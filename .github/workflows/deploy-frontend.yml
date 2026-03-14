@@ -1,0 +1,40 @@
+name: Deploy frontend to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch API URL into frontend
+        run: |
+          # Replace localhost:8000 with your live Render gateway URL
+          sed -i "s|http://localhost:8000|https://kitchen-api-gateway.onrender.com|g" \
+            frontend/index.html frontend/admin.html
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
